@@ -1,0 +1,7 @@
+__pycache__
+env
+.env
+instance
+log
+outputs
+requirements.txt
