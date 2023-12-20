@@ -1,0 +1,30 @@
+bash -c "apt update && apt install -y wget && DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server && \
+mkdir -p ~/.ssh && cd $_ && chmod 700 ~/.ssh && echo YOUR_PUBLIC_KEY > authorized_keys && \
+chmod 700 authorized_keys && service ssh start && \
+cd / && apt update && apt upgrade -y && \
+apt-get install -y python3.10 && \
+apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev wget && \
+apt-get install -y software-properties-common && \
+add-apt-repository -y ppa:deadsnakes/ppa && \
+apt install -y python3.10 && \
+apt install -y python3.10-venv && \
+apt install -y ffmpeg && \
+apt install -y git && \
+git clone https://github.com/kaosi-anikwe/video-api.git /root/video-api && \
+cd /root/video-api && \
+python3.10 -m venv env && \
+source env/bin/activate && \
+pip install --upgrade pip && \
+pip install -r requirements/requirements.txt && \
+pip install -r requirements/pt2.txt && \
+pip install . && \
+pip install -e git+https://github.com/Stability-AI/datapipelines.git@main#egg=sdata && \
+mkdir checkpoints && \
+wget -O checkpoints/svd_xt.safetensors https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors?download=true && \
+echo 'VIDEO_DIR=/root/video-api/outputs/video' > .env && \
+echo 'THUMBNAIL_DIR=/root/video-api/outputs/thumbnail' >> .env && \
+echo 'SECRET_KEY=niftyverse' >> .env && \
+echo 'SECURITY_PASSWORD_SALT=niftyverse' >> .env && \
+mkdir log && \
+nohup sh -c 'gunicorn -w 4 -b :5000 run:app >> log/run.log 2>&1 & python -u worker.py >> log/run.log 2>&1' && \
+sleep infinity"
