@@ -78,4 +78,4 @@ class Videos(db.Model, TimestampMixin, DatabaseHelperMixin):
         return url_for("api.download_video", video_id=self.uid)
 
     def thumbnail_url(self) -> str:
-        return url_for("api.thumbnail_download", thumbnail_id=self.uid)
+        return url_for("api.download_thumbnail", thumbnail_id=self.uid)
