@@ -39,7 +39,6 @@ from sgm.util import append_dims, default, instantiate_from_config
 # API imports
 from flask import request
 from app import logger
-from app.models import Videos
 from werkzeug.datastructures import FileStorage
 
 
@@ -129,7 +128,7 @@ def get_unique_embedder_keys_from_conditioner(conditioner):
 
 
 def init_embedder_options(
-    keys, init_dict, input_image: FileStorage, prompt=None, negative_prompt=None
+    request, keys, init_dict, input_image: str, prompt=None, negative_prompt=None
 ):
     # Hardcoded demo settings; might undergo some changes in the future
 
@@ -141,8 +140,8 @@ def init_embedder_options(
             if negative_prompt is None:
                 negative_prompt = ""
 
-            prompt = request.form.get("prompt", prompt)
-            negative_prompt = request.form.get("negative_prompt", negative_prompt)
+            prompt = request.get("prompt", prompt)
+            negative_prompt = request.get("negative_prompt", negative_prompt)
 
             value_dict["prompt"] = prompt
             value_dict["negative_prompt"] = negative_prompt
@@ -170,13 +169,13 @@ def init_embedder_options(
             value_dict["target_height"] = init_dict["target_height"]
 
         if key in ["fps_id", "fps"]:
-            fps = int(request.form.get("fps", 6))
+            fps = int(request.get("fps", 6))
 
             value_dict["fps"] = fps
             value_dict["fps_id"] = fps - 1
 
         if key == "motion_bucket_id":
-            mb_id = int(request.form.get("motion_bucket_id", 127))
+            mb_id = int(request.get("motion_bucket_id", 127))
             value_dict["motion_bucket_id"] = mb_id
 
         if key == "pool_image":
@@ -207,13 +206,13 @@ def perform_save_locally(save_path, samples):
         base_count += 1
 
 
-def get_guider(options):
+def get_guider(request, options):
     guiders = [
         "VanillaCFG",
         "IdentityGuider",
         "LinearPredictionGuider",
     ]
-    guider = request.form.get("guider", guiders[-1])
+    guider = request.get("guider", guiders[-1])
     if guider not in guiders:
         raise Exception(f"Invalid guider selected: {guider}")
 
@@ -224,7 +223,7 @@ def get_guider(options):
             "target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"
         }
     elif guider == "VanillaCFG":
-        scale = float(request.form.get("cfg_scale", options.get("cfg", 5.0)))
+        scale = float(request.get("cfg_scale", options.get("cfg", 5.0)))
 
         guider_config = {
             "target": "sgm.modules.diffusionmodules.guiders.VanillaCFG",
@@ -234,9 +233,9 @@ def get_guider(options):
             },
         }
     elif guider == "LinearPredictionGuider":
-        max_scale = float(request.form.get("max_cfg_scale", options.get("cfg", 1.5)))
+        max_scale = float(request.get("max_cfg_scale", options.get("cfg", 1.5)))
         min_scale = float(
-            request.form.get("min_guidance_scale", options.get("min_cfg", 1.0))
+            request.get("min_guidance_scale", options.get("min_cfg", 1.0))
         )
 
         guider_config = {
@@ -254,6 +253,7 @@ def get_guider(options):
 
 
 def init_sampling(
+    request,
     img2img_strength: Optional[float] = None,
     specify_num_samples: bool = True,
     stage2strength: Optional[float] = None,
@@ -263,9 +263,9 @@ def init_sampling(
 
     num_rows, num_cols = 1, 1
     if specify_num_samples:
-        num_cols = int(request.form.get("num_cols", num_cols))
+        num_cols = int(request.get("num_cols", num_cols))
 
-    steps = int(request.form.get("steps", 40))
+    steps = int(request.get("steps", 40))
     samplers = [
         "EulerEDMSampler",
         "HeunEDMSampler",
@@ -274,7 +274,7 @@ def init_sampling(
         "DPMPP2MSampler",
         "LinearMultistepSampler",
     ]
-    sampler = request.form.get("sampler", samplers[0])
+    sampler = request.get("sampler", samplers[0])
     if sampler not in samplers:
         raise Exception(f"Invalid sampler selected: {sampler}")
 
@@ -282,15 +282,15 @@ def init_sampling(
         "LegacyDDPMDiscretization",
         "EDMDiscretization",
     ]
-    discretization = request.form.get("discretization", discretizations[1])
+    discretization = request.get("discretization", discretizations[1])
     if discretization not in discretizations:
         raise Exception(f"Invalid discretization selected: {discretization}")
 
-    discretization_config = get_discretization(discretization, options=options)
+    discretization_config = get_discretization(request, discretization, options=options)
 
-    guider_config = get_guider(options=options)
+    guider_config = get_guider(request, options=options)
 
-    sampler = get_sampler(sampler, steps, discretization_config, guider_config)
+    sampler = get_sampler(request, sampler, steps, discretization_config, guider_config)
     if img2img_strength is not None:
         logger.warning(
             f"Wrapping {sampler.__class__.__name__} with Img2ImgDiscretizationWrapper"
@@ -305,17 +305,15 @@ def init_sampling(
     return sampler, num_rows, num_cols
 
 
-def get_discretization(discretization, options):
+def get_discretization(request, discretization, options):
     if discretization == "LegacyDDPMDiscretization":
         discretization_config = {
             "target": "sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization",
         }
     elif discretization == "EDMDiscretization":
-        sigma_min = float(request.form.get("sigma_min", options.get("sigma_min", 0.03)))
-        sigma_max = float(
-            request.form.get("sigma_max", options.get("sigma_max", 14.61))
-        )
-        rho = float(request.form.get("rho", options.get("rho", 3.0)))
+        sigma_min = float(request.get("sigma_min", options.get("sigma_min", 0.03)))
+        sigma_max = float(request.get("sigma_max", options.get("sigma_max", 14.61)))
+        rho = float(request.get("rho", options.get("rho", 3.0)))
         discretization_config = {
             "target": "sgm.modules.diffusionmodules.discretizer.EDMDiscretization",
             "params": {
@@ -328,12 +326,12 @@ def get_discretization(discretization, options):
     return discretization_config
 
 
-def get_sampler(sampler_name, steps, discretization_config, guider_config):
+def get_sampler(request, sampler_name, steps, discretization_config, guider_config):
     if sampler_name == "EulerEDMSampler" or sampler_name == "HeunEDMSampler":
-        s_churn = float(request.form.get("s_churn", 0.0))
-        s_tmin = float(request.form.get("s_tmin", 0.0))
-        s_tmax = float(request.form.get("s_tmax", 999.0))
-        s_noise = float(request.form.get("s_noise", 1.0))
+        s_churn = float(request.get("s_churn", 0.0))
+        s_tmin = float(request.get("s_tmin", 0.0))
+        s_tmax = float(request.get("s_tmax", 999.0))
+        s_noise = float(request.get("s_noise", 1.0))
 
         if sampler_name == "EulerEDMSampler":
             sampler = EulerEDMSampler(
@@ -361,8 +359,8 @@ def get_sampler(sampler_name, steps, discretization_config, guider_config):
         sampler_name == "EulerAncestralSampler"
         or sampler_name == "DPMPP2SAncestralSampler"
     ):
-        s_noise = float(request.form.get("s_noise", 1.0))
-        eta = float(request.form.get("eta", 1.0))
+        s_noise = float(request.get("s_noise", 1.0))
+        eta = float(request.get("eta", 1.0))
 
         if sampler_name == "EulerAncestralSampler":
             sampler = EulerAncestralSampler(
@@ -390,7 +388,7 @@ def get_sampler(sampler_name, steps, discretization_config, guider_config):
             verbose=True,
         )
     elif sampler_name == "LinearMultistepSampler":
-        order = int(request.form.get("order", 4))
+        order = int(request.get("order", 4))
         sampler = LinearMultistepSampler(
             num_steps=steps,
             discretization_config=discretization_config,
@@ -404,18 +402,17 @@ def get_sampler(sampler_name, steps, discretization_config, guider_config):
     return sampler
 
 
-def get_interactive_image(input_image: FileStorage) -> Image.Image:
+def get_interactive_image(input_image: str) -> Image.Image:
     image = input_image
-    image.stream.seek(0)
-    if image is not None:
-        image = Image.open(image.stream)
+    if input_image is not None:
+        image = Image.open(input_image)
         if not image.mode == "RGB":
             image = image.convert("RGB")
         return image
 
 
 def load_img(
-    input_image: FileStorage,
+    input_image: str,
     size: Union[None, int, Tuple[int, int]] = None,
     center_crop: bool = False,
 ):
@@ -777,18 +774,17 @@ def get_resizing_factor(
     return factor
 
 
-def get_interactive_image(input_image: FileStorage) -> Image.Image:
+def get_interactive_image(input_image: str) -> Image.Image:
     image = input_image
-    image.stream.seek(0)
-    if image is not None:
-        image = Image.open(image.stream)
+    if input_image is not None:
+        image = Image.open(input_image)
         if not image.mode == "RGB":
             image = image.convert("RGB")
         return image
 
 
 def load_img_for_prediction(
-    W: int, H: int, input_image: FileStorage, device="cuda"
+    W: int, H: int, input_image: str, device="cuda"
 ) -> torch.Tensor:
     image = get_interactive_image(input_image)
     if image is None:
@@ -817,25 +813,23 @@ def save_video_as_grid_and_mp4(
     video_batch: torch.Tensor,
     save_path: str,
     T: int,
-    video_record: Videos,
+    video_record,
     fps: int = 5,
 ):
     os.makedirs(save_path, exist_ok=True)
 
     video_batch = rearrange(video_batch, "(b t) c h w -> b t c h w", t=T)
     video_batch = embed_watermark(video_batch)
+    video_record.update_status("completed")
     for vid in video_batch:
         save_image(vid, fp=video_record.thumbnail_path(), nrow=4)
-
         video_path = video_record.video_path()
-
         writer = cv2.VideoWriter(
             video_path,
-            cv2.VideoWriter_fourcc(*"MP4V"),
+            cv2.VideoWriter_fourcc(*"mp4v"),
             fps,
             (vid.shape[-1], vid.shape[-2]),
         )
-
         vid = (
             (rearrange(vid, "t c h w -> t h w c") * 255).cpu().numpy().astype(np.uint8)
         )

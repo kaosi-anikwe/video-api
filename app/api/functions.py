@@ -2,6 +2,13 @@ import os
 import imghdr
 from datetime import datetime
 
+# img2vid
+from pytorch_lightning import seed_everything
+from .streamlit_helpers import *
+
+SAVE_PATH = os.getenv("VIDEO_DIR")
+
+
 VERSION2SPECS = {
     "svd": {
         "T": 14,
@@ -104,3 +111,70 @@ def generate_path(date=None):
     # Format path
     path = os.path.join(f"{month:02d}-{year}", f"{day:02d}-{month:02d}")
     return path
+
+
+def do_img2vid(request, image: str, video_record):
+    version = "svd_xt"
+    version_dict = VERSION2SPECS[version]
+    H = int(request.get("H", version_dict["H"]))
+    W = int(request.get("W", version_dict["W"]))
+    T = int(request.get("T", version_dict["T"]))
+    C = version_dict["C"]
+    F = version_dict["f"]
+    options = version_dict["options"]
+    state = init_st(version_dict, load_filter=True)
+    model = state["model"]
+    ukeys = set(get_unique_embedder_keys_from_conditioner(state["model"].conditioner))
+    value_dict = init_embedder_options(request, ukeys, {}, image)
+
+    value_dict["image_only_indicator"] = 0
+
+    img = load_img_for_prediction(W, H, image)
+    cond_aug = float(request.get("cond_aug", 0.02))
+    value_dict["cond_frames_without_noise"] = img
+    value_dict["cond_frames"] = img + cond_aug * torch.randn_like(img)
+    value_dict["cond_aug"] = cond_aug
+    seed = int(request.get("seed", 23))
+    seed_everything(seed)
+
+    save_path = SAVE_PATH
+    options["num_frames"] = T
+
+    sampler, num_rows, num_cols = init_sampling(request, options=options)
+    num_samples = num_rows * num_cols
+
+    decoding_t = int(request.get("decoding_t", options.get("decoding_t", T)))
+
+    if request.get("fps"):
+        saving_fps = int(request.get("fps"))
+    else:
+        saving_fps = value_dict["fps"]
+
+    out = do_sample(
+        model,
+        sampler,
+        value_dict,
+        num_samples,
+        H,
+        W,
+        C,
+        F,
+        T=T,
+        batch2model_input=["num_video_frames", "image_only_indicator"],
+        force_uc_zero_embeddings=options.get("force_uc_zero_embeddings", None),
+        force_cond_zero_embeddings=options.get("force_cond_zero_embeddings", None),
+        return_latents=False,
+        decoding_t=decoding_t,
+    )
+
+    if isinstance(out, (tuple, list)):
+        samples, samples_z = out
+    else:
+        samples = out
+        samples_z = None
+
+    save_video_as_grid_and_mp4(
+        samples, save_path, T, video_record=video_record, fps=saving_fps
+    )
+
+    return
