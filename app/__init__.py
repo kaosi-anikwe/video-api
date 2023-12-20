@@ -1,6 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
+from logging.handlers import RotatingFileHandler
 
 # flask imports
 from flask import Flask
@@ -16,12 +17,18 @@ db = SQLAlchemy()
 os.makedirs("log", exist_ok=True)
 
 # configure logger
-logging.basicConfig(
-    filename=os.path.join("log", "run.log"),
-    level=logging.INFO,
-    format="%(levelname)s - %(name)s - %(message)s",
-)
+log_filename = os.path.join("log", "run.log")
+log_max_size = 1 * 1024 * 1024  # 1 MB
+# Create a logger
 logger = logging.getLogger("svd-api")
+logger.setLevel(logging.INFO)
+# Create a file handler with log rotation
+handler = RotatingFileHandler(log_filename, maxBytes=log_max_size, backupCount=5)
+# Create a formatter
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] - %(message)s")
+handler.setFormatter(formatter)
+# Add the handler to the logger
+logger.addHandler(handler)
 
 
 def create_app(config=Config) -> Flask:
