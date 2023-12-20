@@ -16,17 +16,19 @@ db = SQLAlchemy()
 
 os.makedirs("log", exist_ok=True)
 
-# configure logger
+# Logging configuration
 log_filename = os.path.join("log", "run.log")
 log_max_size = 1 * 1024 * 1024  # 1 MB
-# Create a logger
+# configure logger
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger("svd-api")
-logger.setLevel(logging.INFO)
 # Create a file handler with log rotation
 handler = RotatingFileHandler(log_filename, maxBytes=log_max_size, backupCount=5)
-# Create a formatter
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] - %(message)s")
-handler.setFormatter(formatter)
 # Add the handler to the logger
 logger.addHandler(handler)
 

@@ -282,9 +282,7 @@ def init_sampling(
         "LegacyDDPMDiscretization",
         "EDMDiscretization",
     ]
-    discretization = request.form.get(
-        "discretization", discretizations[1]
-    )
+    discretization = request.form.get("discretization", discretizations[1])
     if discretization not in discretizations:
         raise Exception(f"Invalid discretization selected: {discretization}")
 
