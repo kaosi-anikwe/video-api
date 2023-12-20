@@ -1,7 +1,7 @@
 # local imports
 from app import logger
 from app.models import Videos
-from .fuctions import is_image, VERSION2SPECS
+from .functions import is_image, VERSION2SPECS
 from .streamlit_helpers import *
 
 # flask imports

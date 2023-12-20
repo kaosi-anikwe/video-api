@@ -1,6 +1,6 @@
 # local imports
 from . import db
-from .api.fuctions import generate_path
+from .api.functions import generate_path
 
 # flask imports
 from flask import url_for
