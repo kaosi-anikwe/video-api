@@ -19,6 +19,7 @@ THUMBNAIL_DIR = os.getenv("THUMBNAIL_DIR")
 os.makedirs(VIDEO_DIR, exist_ok=True)
 os.makedirs(THUMBNAIL_DIR, exist_ok=True)
 
+
 # timestamp to be inherited by other class models
 class TimestampMixin(object):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -47,30 +48,34 @@ class DatabaseHelperMixin(object):
         db.session.delete(self)
         db.session.commit()
 
+
 class Videos(db.Model, TimestampMixin, DatabaseHelperMixin):
     __tablename__ = "video"
 
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String(200), unique=True, nullable=False)
+    version = db.Column(db.String(20), nullable=False)
     video_name = db.Column(db.String(200), unique=True, nullable=False)
     thumbnail_name = db.Column(db.String(200), unique=True, nullable=False)
 
-    def __init__(self) -> None:
+    def __init__(self, version: str) -> None:
         self.uid = uuid.uuid4().hex
+        self.version = version
         self.video_name = f"{self.uid}.mp4"
-        self.thumbnail_name = f"{self.uid}.jpg"
+        self.thumbnail_name = f"{self.uid}.png"
 
     def video_path(self) -> str:
         video_dir = os.path.join(VIDEO_DIR, generate_path(self.created_at))
         os.makedirs(video_dir, exist_ok=True)
         return os.path.join(video_dir, self.video_name)
-    
+
     def thumbnail_path(self) -> str:
         thumbnail_dir = os.path.join(THUMBNAIL_DIR, generate_path(self.created_at))
         os.makedirs(thumbnail_dir, exist_ok=True)
         return os.path.join(thumbnail_dir, self.thumbnail_name)
-    
-    def url(self) -> str:
-        return url_for("api.download", uid=self.uid)
 
-    
+    def video_url(self) -> str:
+        return url_for("api.download_video", video_id=self.uid)
+
+    def thumbnail_url(self) -> str:
+        return url_for("api.thumbnail_download", thumbnail_id=self.uid)

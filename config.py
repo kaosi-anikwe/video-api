@@ -6,6 +6,7 @@ load_dotenv()
 # define base directory of app
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+
 class Config(object):
     # key for CSF
     SECRET_KEY = os.environ.get("SECRET_KEY")

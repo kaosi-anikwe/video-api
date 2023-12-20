@@ -13,8 +13,12 @@ from packaging import version
 
 from ..modules.autoencoding.regularizers import AbstractRegularizer
 from ..modules.ema import LitEma
-from ..util import (default, get_nested_attribute, get_obj_from_str,
-                    instantiate_from_config)
+from ..util import (
+    default,
+    get_nested_attribute,
+    get_obj_from_str,
+    instantiate_from_config,
+)
 
 logpy = logging.getLogger(__name__)
 

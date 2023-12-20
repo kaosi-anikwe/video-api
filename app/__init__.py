@@ -23,6 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("svd-api")
 
+
 def create_app(config=Config) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config)
@@ -33,4 +34,3 @@ def create_app(config=Config) -> Flask:
     app.register_blueprint(api)
 
     return app
-
