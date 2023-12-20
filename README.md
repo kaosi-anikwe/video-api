@@ -81,8 +81,6 @@ Endpoint returns JSON object with task status.
 
 This endpoint retrieves tasks from the system. It returns either a JSON list of tasks or a JSON object, depending on whether the optional request argument "id" is specified.
 
-## Request
-
-### Parameters
+#### Parameters
 
 - `id` (Optional, String): The unique identifier for a specific task. If provided, the endpoint will return a JSON object for the specified task. If not provided, the endpoint will return a JSON list of all tasks.
