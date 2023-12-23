@@ -113,7 +113,7 @@ def generate_path(date=None):
     return path
 
 
-def do_img2vid(request, image: str, video_record):
+def do_img2vid(request, image: str, video_record=None):
     version = "svd_xt"
     version_dict = VERSION2SPECS[version]
     H = int(request.get("H", version_dict["H"]))
@@ -173,8 +173,8 @@ def do_img2vid(request, image: str, video_record):
         samples = out
         samples_z = None
 
-    save_video_as_grid_and_mp4(
+    results = save_video_as_grid_and_mp4(
         samples, save_path, T, video_record=video_record, fps=saving_fps
     )
 
-    return
+    return results if results else None

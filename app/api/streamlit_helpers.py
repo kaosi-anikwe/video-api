@@ -1,7 +1,9 @@
+import os
 import copy
 import math
-import os
+import tempfile
 from glob import glob
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
@@ -813,17 +815,29 @@ def save_video_as_grid_and_mp4(
     video_batch: torch.Tensor,
     save_path: str,
     T: int,
-    video_record,
+    video_record=None,
     fps: int = 5,
 ):
     os.makedirs(save_path, exist_ok=True)
 
     video_batch = rearrange(video_batch, "(b t) c h w -> b t c h w", t=T)
     video_batch = embed_watermark(video_batch)
-    video_record.update_status("completed")
+    if video_record:
+        video_record.update_status("completed")
+    else:
+        end_time = datetime.utcnow()
+    thumbnail_path = (
+        video_record.thumbnail_path()
+        if video_record
+        else tempfile.mkstemp(suffix=".png")[1]
+    )
+    video_path = (
+        video_record.video_path()
+        if video_record
+        else tempfile.mkstemp(suffix=".mp4")[1]
+    )
     for vid in video_batch:
-        save_image(vid, fp=video_record.thumbnail_path(), nrow=4)
-        video_path = video_record.video_path()
+        save_image(vid, fp=thumbnail_path, nrow=4)
         writer = cv2.VideoWriter(
             video_path,
             cv2.VideoWriter_fourcc(*"mp4v"),
@@ -838,3 +852,45 @@ def save_video_as_grid_and_mp4(
             writer.write(frame)
 
         writer.release()
+
+        if not video_record:
+            # request is serverless
+            import uuid
+            import json
+            import firebase_admin
+            from firebase_admin import storage
+            from app.api.functions import generate_path
+
+            SERVICE_CERT = json.loads(os.getenv("SERVICE_CERT"))
+            STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
+            cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
+            firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
+            storage_client = storage.bucket()
+            path = generate_path()
+            basename = uuid.uuid4().hex
+
+            # upload image and video to firebase
+            thumbnail_blob = storage_client.blob(
+                os.path.join("thumbnails", path, f"{basename}.png")
+            )
+            thumbnail_blob.upload_from_filename(thumbnail_path)
+            thumbnail_blob.make_public()
+            thumbnail_url = thumbnail_blob.public_url
+
+            video_blob = storage_client.blob(
+                os.path.join("videos", path, f"{basename}.mp4")
+            )
+            video_blob.upload_from_filename(video_path)
+            video_blob.make_public()
+            video_url = video_blob.public_url
+
+            if os.path.exists(thumbnail_path):
+                os.remove(thumbnail_path)
+            if os.path.exists(video_path):
+                os.remove(video_path)
+
+            return {
+                "thumbnail": thumbnail_url,
+                "videoURL": video_url,
+                "endTime": end_time,
+            }

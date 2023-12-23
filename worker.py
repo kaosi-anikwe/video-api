@@ -5,7 +5,6 @@ import traceback
 from app import create_app, logger, db
 from app.models import Videos
 from app.api.functions import do_img2vid
-from werkzeug.datastructures import FileStorage
 
 
 if __name__ == "__main__":
