@@ -887,5 +887,5 @@ def save_video_as_grid_and_mp4(
                 "thumbnail": thumbnail_url,
                 "videoURL": video_url,
                 "endTime": end_time,
-                "status": "completed"
+                "status": "completed",
             }
