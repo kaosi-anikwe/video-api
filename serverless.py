@@ -13,13 +13,6 @@ from app.api.functions import do_img2vid
 
 load_dotenv()
 
-SERVICE_CERT = json.loads(os.getenv("SERVICE_CERT"))
-STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
-cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
-default_app = firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
-db = firestore.client()
-ref = db.collection("videoList").document()
-
 
 def download_image(url):
     response = requests.get(url)
@@ -52,9 +45,18 @@ def videoRecordDict(userID):
 
 
 def handler(job):
+    # initialize firebase app
+    SERVICE_CERT = json.loads(os.getenv("SERVICE_CERT"))
+    STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
+    cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
+    firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
+    db = firestore.client()
+    ref = db.collection("videoList").document()
+    # get job input
     request = job["input"]
     video_record = videoRecordDict(request.get("userID", ""))
-    ref.set(video_record)  # add data to firebase
+    # add data to firebase
+    ref.set(video_record)
     image = download_image(request["image_url"])
     if not image:
         return {"error": "Failed to download image"}

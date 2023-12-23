@@ -856,15 +856,9 @@ def save_video_as_grid_and_mp4(
         if not video_record:
             # request is serverless
             import uuid
-            import json
-            import firebase_admin
             from firebase_admin import storage
             from app.api.functions import generate_path
 
-            SERVICE_CERT = json.loads(os.getenv("SERVICE_CERT"))
-            STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
-            cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
-            firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
             storage_client = storage.bucket()
             path = generate_path()
             basename = uuid.uuid4().hex
@@ -893,4 +887,5 @@ def save_video_as_grid_and_mp4(
                 "thumbnail": thumbnail_url,
                 "videoURL": video_url,
                 "endTime": end_time,
+                "status": "completed"
             }
