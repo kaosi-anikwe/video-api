@@ -813,13 +813,10 @@ def load_img_for_prediction(
 
 def save_video_as_grid_and_mp4(
     video_batch: torch.Tensor,
-    save_path: str,
     T: int,
     video_record=None,
     fps: int = 5,
 ):
-    os.makedirs(save_path, exist_ok=True)
-
     video_batch = rearrange(video_batch, "(b t) c h w -> b t c h w", t=T)
     video_batch = embed_watermark(video_batch)
     if video_record:

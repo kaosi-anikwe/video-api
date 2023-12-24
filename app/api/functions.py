@@ -6,8 +6,6 @@ from datetime import datetime
 from pytorch_lightning import seed_everything
 from .streamlit_helpers import *
 
-SAVE_PATH = os.getenv("VIDEO_DIR")
-
 
 VERSION2SPECS = {
     "svd": {
@@ -137,7 +135,6 @@ def do_img2vid(request, image: str, video_record=None):
     seed = int(request.get("seed", 23))
     seed_everything(seed)
 
-    save_path = SAVE_PATH
     options["num_frames"] = T
 
     sampler, num_rows, num_cols = init_sampling(request, options=options)
@@ -174,7 +171,7 @@ def do_img2vid(request, image: str, video_record=None):
         samples_z = None
 
     results = save_video_as_grid_and_mp4(
-        samples, save_path, T, video_record=video_record, fps=saving_fps
+        samples, T, video_record=video_record, fps=saving_fps
     )
 
     return results if results else None

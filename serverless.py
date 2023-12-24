@@ -3,6 +3,7 @@ import json
 import runpod
 import tempfile
 import requests
+import traceback
 import firebase_admin
 from datetime import datetime
 from dotenv import load_dotenv
@@ -65,7 +66,7 @@ def handler(job):
         ref.update(result)
         return result
     except Exception as e:
-        ref.update({"status": "error", "errorMessage": str(e)})
+        ref.update({"status": "error", "errorMessage": traceback.format_exc()})
         return {"error": str(e)}
     finally:
         if os.path.exists(image):
