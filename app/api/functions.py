@@ -1,12 +1,20 @@
 import os
+import time
 import imghdr
+import random
+import requests
 from datetime import datetime
+from midjourney_api import TNL
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # img2vid
 from pytorch_lightning import seed_everything
 from .streamlit_helpers import *
 
 
+TNL_API_KEY = os.getenv("TNL_API_KEY")
 VERSION2SPECS = {
     "svd": {
         "T": 14,
@@ -111,6 +119,20 @@ def generate_path(date=None):
     return path
 
 
+def download_image(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        # Create a temporary file to save the image
+        _, temp_filename = tempfile.mkstemp(suffix=".jpg")
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(response.content)
+
+        return temp_filename
+    else:
+        return None
+
+
 def do_img2vid(request, image: str, video_record=None):
     version = "svd_xt"
     version_dict = VERSION2SPECS[version]
@@ -175,3 +197,25 @@ def do_img2vid(request, image: str, video_record=None):
     )
 
     return results if results else None
+
+
+def text2img(prompt: str):
+    tnl = TNL(TNL_API_KEY)
+    response = tnl.imagine(prompt)
+    print(response)
+    if not response.get("success"):
+        return None
+    message_id = response["messageId"]
+    results = None
+    while True:
+        # check for status
+        status = tnl.get_message_and_progress(message_id, 30)
+        print(status)
+        if status["progress"] == 100:
+            results = status.get("response", {})
+            break
+        time.sleep(1)
+
+    # get image url
+    image_url = random.choice(results["imageUrls"])
+    return image_url

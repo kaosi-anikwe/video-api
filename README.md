@@ -1,8 +1,8 @@
-# Image to Video API with Stable Video Diffusion (SVD)
+# Text to Video API with Midjourney and Stable Video Diffusion (SVD)
 
 ## Overview
 
-Image to Video API using stable diffusion. The API uses the svd model from Stability AI.
+Text to Video API using Midjourney and stable diffusion. The API uses [this](https://www.thenextleg.io/) Midjourney API and the svd model from Stability AI.
 
 ## Setup
 
@@ -17,9 +17,12 @@ Wait for the build to complete to get the `BASE_URL`
 
 Endpoint for staging image generation task.
 
-#### Parameters
+#### Parameters (as `JSON`)
 
-- `file` (required): The image file to be used to generate the video.
+- `prompt` : The prompt that will be used to generate the image for animation.
+- `image_url` : The link to the image to be used to generate the video.
+
+`Note:` Only one of these should be submitted. The default is `prompt`.
 
 #### Optional parameters
 
@@ -39,12 +42,14 @@ Endpoint for staging image generation task.
 - `sampler` (String, Options: EulerEDMSampler, HeunEDMSampler, EulerAncestralSampler, DPMPP2SAncestralSampler, DPMPP2MSampler, LinearMultistepSampler): Type of sampler (e.g., EulerEDMSampler)
 
   - If `sampler` is EulerEDMSampler or HeunEDMSampler:
+
     - `s_churn` (Number, Default: 0.0): Churn parameter (e.g., 0.0)
     - `s_tmin` (Number, Default: 0.0): Minimum time (e.g., 0.0)
     - `s_tmax` (Number, Default: 999.0): Maximum time (e.g., 999.0)
     - `s_noise` (Number, Default: 1.0): Noise parameter (e.g., 1.0)
 
   - If `sampler` is EulerAncestralSampler or DPMPP2SAncestralSampler:
+
     - `s_noise` (Number, Range: 0.0 to 1.0, Default: 1.0): Noise parameter (e.g., 1.0)
     - `eta` (Number, Range: 0.0 to 1.0, Default: 1.0): Eta parameter (e.g., 1.0)
 
@@ -65,12 +70,13 @@ Endpoint for staging image generation task.
 - `guider` (String, Options: LinearPredictionGuider, VanillaCFG, IdentityGuider): Type of guider (e.g., LinearPredictionGuider)
 
   - If `guider` is VanillaCFG:
+
     - `cfg_scale` (Number, Minimum: 0.0, Default: 5.0): CFG scale parameter (e.g., 5.0)
 
   - If `guider` is LinearPredictionGuider:
     - `max_cfg_scale` (Number, Minimum: 1.0, Default: 1.5): Maximum CFG scale (e.g., 1.5)
     - `min_guidance_scale` (Number, Range: 1.0 to 10.0, Default: 1.0): Minimum guidance scale (e.g., 1.0)
-   
+
 `Note:` The request should be sent as form data and not JSON
 
 Endpoint returns JSON object with task status.

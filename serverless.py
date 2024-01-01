@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from firebase_admin import firestore
 
 # local imports
-from app.api.functions import do_img2vid
+from app.api.functions import do_img2vid, text2img, download_image
 
 load_dotenv()
 
@@ -21,20 +21,6 @@ cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
 firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
 db = firestore.client()
 ref = db.collection("videoList").document()
-
-
-def download_image(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        # Create a temporary file to save the image
-        _, temp_filename = tempfile.mkstemp(suffix=".jpg")
-
-        with open(temp_filename, "wb") as temp_file:
-            temp_file.write(response.content)
-
-        return temp_filename
-    else:
-        return None
 
 
 def videoRecordDict(userID):
@@ -59,7 +45,10 @@ def handler(job):
     video_record = videoRecordDict(request.get("userID", ""))
     # add data to firebase
     ref.set(video_record)
-    image = download_image(request["image_url"])
+    if not request.get("image_url"):
+        image = download_image(text2img(request["prompt"]))
+    else:
+        image = download_image(request["image_url"])
     if not image:
         return {"error": "Failed to download image"}
     try:

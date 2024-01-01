@@ -1,7 +1,7 @@
 # local imports
 from app import logger
 from app.models import Videos
-from .functions import is_image
+from .functions import is_image, text2img, download_image
 
 # flask imports
 from flask import Blueprint, request, jsonify, send_file, json
@@ -106,26 +106,32 @@ def get_status():
 
 @api.post("/img2vid")
 def img2vid():
+    data = request.get_json()
     try:
-        logger.info(request.files)
-        if not request.files.get("file"):
-            return jsonify(error="Invalid request", message="Image file not found"), 400
-        image = request.files.get("file")
-        # save temp file
-        with tempfile.NamedTemporaryFile("wb", delete=False) as tmp_image:
-            image.stream.seek(0)
-            tmp_image.write(image.stream.read())
-            tmp_image_name = tmp_image.name
-            # save temp config
-            with tempfile.NamedTemporaryFile("w+", delete=False) as tmp_conf:
-                json.dump(request.form.to_dict(), tmp_conf)
-                tmp_conf_name = tmp_conf.name
-        if not is_image(tmp_image_name):
+        logger.info(data)
+        if not data.get("prompt") and not data.get("image_url"):
+            return (
+                jsonify(error="Invalid request", message="Image and prompt not found"),
+                400,
+            )
+
+        if not data.get("image_url"):
+            image = download_image(text2img(data["prompt"]))
+        else:
+            image = download_image(data["image_url"])
+
+        if not is_image(image):
             return (
                 jsonify(error="Invalid request", message="Invalid image file"),
                 400,
             )
-        new_video = Videos("svd_xt", tmp_image_name, tmp_conf_name)
+
+        # save temp config
+        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp_conf:
+            json.dump(data, tmp_conf)
+            tmp_conf_name = tmp_conf.name
+
+        new_video = Videos("svd_xt", image, tmp_conf_name)
         new_video.insert()
         return jsonify(new_video.format())
     except Exception as e:
