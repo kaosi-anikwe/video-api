@@ -142,7 +142,7 @@ def download_image(url):
         'Accept': 'application/arraybuffer',
         'Authorization': f'Bearer {TNL_API_KEY}'
         }
-        response = requests.post(TNL_API_KEY, headers=headers, data=payload)
+        response = requests.post(TNL_IMAGE_URL, headers=headers, data=payload)
         logger.info(f"IMAGE DOWNLOAD: {response.status_code}")
         if response.status_code == 200:
             # Create a temporary file to save the image
