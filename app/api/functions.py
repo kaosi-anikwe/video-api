@@ -223,7 +223,7 @@ def do_img2vid(request, image: str, video_record=None):
 
 def text2img(prompt: str):
     tnl = TNL(TNL_API_KEY)
-    response = tnl.imagine(prompt)
+    response = tnl.imagine(f"{prompt} --ar 1024:576")
     logger.info(response)
     if not response.get("success"):
         return None
