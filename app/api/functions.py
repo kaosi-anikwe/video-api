@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import imghdr
 import random
 import requests
@@ -15,6 +16,7 @@ from .streamlit_helpers import *
 
 
 TNL_API_KEY = os.getenv("TNL_API_KEY")
+TNL_IMAGE_URL = "https://api.thenextleg.io/getImage"
 VERSION2SPECS = {
     "svd": {
         "T": 14,
@@ -121,6 +123,7 @@ def generate_path(date=None):
 
 def download_image(url):
     response = requests.get(url)
+    logger.info(f"IMAGE DOWNLOAD: {response.status_code}")
     if response.status_code == 200:
         # Create a temporary file to save the image
         _, temp_filename = tempfile.mkstemp(suffix=".jpg")
@@ -130,6 +133,25 @@ def download_image(url):
 
         return temp_filename
     else:
+        logger.info("Trying Midjourney safe download.")
+        payload = json.dumps({
+        "imgUrl": url
+        })
+        headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/arraybuffer',
+        'Authorization': f'Bearer {TNL_API_KEY}'
+        }
+        response = requests.post(TNL_API_KEY, headers=headers, data=payload)
+        logger.info(f"IMAGE DOWNLOAD: {response.status_code}")
+        if response.status_code == 200:
+            # Create a temporary file to save the image
+            _, temp_filename = tempfile.mkstemp(suffix=".jpg")
+
+            with open(temp_filename, "wb") as temp_file:
+                temp_file.write(response.content)
+
+            return temp_filename
         return None
 
 
@@ -202,7 +224,7 @@ def do_img2vid(request, image: str, video_record=None):
 def text2img(prompt: str):
     tnl = TNL(TNL_API_KEY)
     response = tnl.imagine(prompt)
-    print(response)
+    logger.info(response)
     if not response.get("success"):
         return None
     message_id = response["messageId"]
@@ -210,12 +232,14 @@ def text2img(prompt: str):
     while True:
         # check for status
         status = tnl.get_message_and_progress(message_id, 30)
-        print(status)
+        logger.info(status)
         if status["progress"] == 100:
             results = status.get("response", {})
             break
         time.sleep(1)
 
-    # get image url
-    image_url = random.choice(results["imageUrls"])
-    return image_url
+    if results:
+        # get image url
+        image_url = random.choice(results["imageUrls"])
+        return image_url
+    return None

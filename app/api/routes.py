@@ -120,6 +120,11 @@ def img2vid():
         else:
             image = download_image(data["image_url"])
 
+        if not image:
+            return (
+                jsonify(error="Internal server error", message="Error retrieving image"),
+                500,
+            )           
         if not is_image(image):
             return (
                 jsonify(error="Invalid request", message="Invalid image file"),
