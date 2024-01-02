@@ -883,6 +883,6 @@ def save_video_as_grid_and_mp4(
             return {
                 "thumbnail": thumbnail_url,
                 "videoURL": video_url,
-                "endTime": end_time,
+                "endTime": end_time.isoformat(),
                 "status": "completed",
             }

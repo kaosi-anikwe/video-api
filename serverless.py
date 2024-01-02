@@ -33,7 +33,7 @@ def videoRecordDict(userID):
         "uploaderID": userID,
         "videoCaption": "",
         "videoURL": "",
-        "startTime": datetime.utcnow(),
+        "startTime": datetime.utcnow().isoformat(),
         "endTime": None,
         "status": "processing",
     }
