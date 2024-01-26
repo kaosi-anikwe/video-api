@@ -20,29 +20,27 @@ STORAGE_BUCKET = os.getenv("STORAGE_BUCKET")
 cred_obj = firebase_admin.credentials.Certificate(SERVICE_CERT)
 firebase_admin.initialize_app(cred_obj, {"storageBucket": STORAGE_BUCKET})
 db = firestore.client()
-ref = db.collection("videoList").document()
+ref = db.collection("videosList").document()
 
 
-def videoRecordDict(userID):
+def videoRecordDict(userID,prompt):
     return {
         "addToFeed": False,
         "commentsCount": 0,
         "likes": [],
         "shares": [],
         "thumbnail": "",
-        "uploaderID": userID,
-        "videoCaption": "",
-        "videoURL": "",
-        "startTime": datetime.utcnow().isoformat(),
-        "endTime": None,
-        "status": "processing",
+        "uploaderId": userID,
+        "videoCaption": prompt,
+        "videoUrl": "",
+        "createdAt": None,
     }
 
 
 def handler(job):
     # get job input
     request = job["input"]
-    video_record = videoRecordDict(request.get("userID", ""))
+    video_record = videoRecordDict(request.get("userID", ""),request.get("prompt", ""))
     # add data to firebase
     ref.set(video_record)
     if not request.get("image_url"):
