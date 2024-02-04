@@ -44,7 +44,12 @@ def handler(job):
     # add data to firebase
     ref.set(video_record)
     if not request.get("image_url"):
-        image = download_image(text2img(request["prompt"]))
+        height = request.get("H")
+        width = request.get("W")
+        if height and width:
+            image = download_image(text2img(request["prompt"], height=height, width=width))
+        else:
+            image = download_image(text2img(request["prompt"]))
     else:
         image = download_image(request["image_url"])
     if not image:
