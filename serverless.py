@@ -23,7 +23,7 @@ db = firestore.client()
 ref = db.collection("videosList").document()
 
 
-def videoRecordDict(userID,prompt):
+def videoRecordDict(userID, prompt):
     return {
         "addToFeed": False,
         "commentsCount": 0,
@@ -40,7 +40,7 @@ def videoRecordDict(userID,prompt):
 def handler(job):
     # get job input
     request = job["input"]
-    video_record = videoRecordDict(request.get("userID", ""),request.get("prompt", ""))
+    video_record = videoRecordDict(request.get("userID", ""), request.get("prompt", ""))
     # add data to firebase
     ref.set(video_record)
     if not request.get("image_url"):

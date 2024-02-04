@@ -2,10 +2,8 @@ import os
 import time
 import json
 import imghdr
-import random
 import requests
 from datetime import datetime
-from midjourney_api import TNL
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,7 +13,7 @@ from pytorch_lightning import seed_everything
 from .streamlit_helpers import *
 
 
-TNL_API_KEY = os.getenv("TNL_API_KEY")
+LEONARDO_API_KEY = os.getenv("LEONARDO_API_KEY")
 TNL_IMAGE_URL = "https://api.thenextleg.io/getImage"
 VERSION2SPECS = {
     "svd": {
@@ -124,7 +122,7 @@ def generate_path(date=None):
 def download_image(url):
     response = requests.get(url)
     logger.info(f"IMAGE DOWNLOAD: {response.status_code}")
-    if response.status_code == 200:
+    if response.ok:
         # Create a temporary file to save the image
         _, temp_filename = tempfile.mkstemp(suffix=".jpg")
 
@@ -132,27 +130,7 @@ def download_image(url):
             temp_file.write(response.content)
 
         return temp_filename
-    else:
-        logger.info("Trying Midjourney safe download.")
-        payload = json.dumps({
-        "imgUrl": url
-        })
-        headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/arraybuffer',
-        'Authorization': f'Bearer {TNL_API_KEY}'
-        }
-        response = requests.post(TNL_IMAGE_URL, headers=headers, data=payload)
-        logger.info(f"IMAGE DOWNLOAD: {response.status_code}")
-        if response.status_code == 200:
-            # Create a temporary file to save the image
-            _, temp_filename = tempfile.mkstemp(suffix=".jpg")
-
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(response.content)
-
-            return temp_filename
-        return None
+    return None
 
 
 def do_img2vid(request, image: str, video_record=None):
@@ -221,25 +199,41 @@ def do_img2vid(request, image: str, video_record=None):
     return results if results else None
 
 
-def text2img(prompt: str):
-    tnl = TNL(TNL_API_KEY)
-    response = tnl.imagine(f"{prompt}")
-    logger.info(response)
-    if not response.get("success"):
-        return None
-    message_id = response["messageId"]
-    results = None
-    while True:
-        # check for status
-        status = tnl.get_message_and_progress(message_id, 30)
-        logger.info(status)
-        if status["progress"] == 100:
-            results = status.get("response", {})
-            break
-        time.sleep(1)
+def text2img(prompt: str, height=1024, width=576):
+    url = "https://cloud.leonardo.ai/api/rest/v1/generations"
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {LEONARDO_API_KEY}",
+    }
+    payload = {
+        "alchemy": True,
+        "photoReal": True,
+        "photoRealStrength": 0.5,
+        "presetStyle": "NONE",
+        "nsfw": True,
+        "height": height,
+        "width": width,
+        "prompt": prompt,
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    logger.info(response.json())
 
-    if results:
-        # get image url
-        image_url = random.choice(results["imageUrls"])
-        return image_url
-    return None
+    if response.ok:
+        generation_id = response.json()["sdGenerationJob"]["generationId"]
+        logger.info(f"GEN ID: {generation_id}")
+        url = f"{url}/{generation_id}"
+        images = None
+        while True:
+            response = requests.get(url, headers=headers)
+            status = response.json()
+            logger.info(status)
+            if status["generations_by_pk"]["generated_images"]:
+                images = status["generations_by_pk"]["generated_images"]
+                break
+            time.sleep(1)
+
+        if images:
+            image_url = images[0]["url"]
+            return image_url
+        return None

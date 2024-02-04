@@ -122,9 +122,11 @@ def img2vid():
 
         if not image:
             return (
-                jsonify(error="Internal server error", message="Error retrieving image"),
+                jsonify(
+                    error="Internal server error", message="Error retrieving image"
+                ),
                 500,
-            )           
+            )
         if not is_image(image):
             return (
                 jsonify(error="Invalid request", message="Invalid image file"),

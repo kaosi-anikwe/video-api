@@ -19,7 +19,7 @@ class EDMWeighting(DiffusionLossWeighting):
         self.sigma_data = sigma_data
 
     def __call__(self, sigma: torch.Tensor) -> torch.Tensor:
-        return (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
+        return (sigma**2 + self.sigma_data**2) / (sigma * self.sigma_data) ** 2
 
 
 class VWeighting(EDMWeighting):
@@ -29,4 +29,4 @@ class VWeighting(EDMWeighting):
 
 class EpsWeighting(DiffusionLossWeighting):
     def __call__(self, sigma: torch.Tensor) -> torch.Tensor:
-        return sigma ** -2.0
+        return sigma**-2.0
