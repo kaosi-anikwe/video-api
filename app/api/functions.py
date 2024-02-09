@@ -1,7 +1,7 @@
 import os
 import time
-import json
 import imghdr
+import random
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -234,6 +234,6 @@ def text2img(prompt: str, height=1024, width=576):
             time.sleep(1)
 
         if images:
-            image_url = images[0]["url"]
+            image_url = random.choice([image["url"] for image in images])
             return image_url
         return None
